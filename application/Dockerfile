@@ -6,7 +6,7 @@ RUN pwd
 
 COPY . /app
 WORKDIR /app
-RUN pwd
+RUN ls -lrt
 
 RUN pip install -r requirements.txt
 RUN pwd
