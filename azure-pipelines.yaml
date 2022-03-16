@@ -1,0 +1,156 @@
+Skip to content
+Search or jump to…
+Pull requests
+Issues
+Marketplace
+Explore
+ 
+@yigit-1905 
+yigit-1905
+/
+volvotest
+Public
+Code
+Issues
+Pull requests
+Actions
+Projects
+Wiki
+Security
+Insights
+Settings
+volvotest/cicd/azure-pipelines.yaml
+
+101605 first commit
+Latest commit 90ad27a 31 minutes ago
+ History
+ 0 contributors
+114 lines (90 sloc)  3.18 KB
+   
+trigger:
+- main
+
+pool: Default
+variables:
+  imageName: 'hello2022'
+  azureSubscription: 'AzureSC'
+  location: Central US
+
+  acrHostName: 'hellovolvocr.azurecr.io'
+  acrName: 'hellovolvocr'
+  rgName: 'hellovolvoRG'
+
+
+stages:
+
+# Infra Stage
+#- stage: CreateInfra
+#  jobs:
+#  - job: CreateInfra
+#    steps:
+
+    # Create or update the ACR resource
+#    - task: AzureResourceGroupDeployment@2
+#      displayName: 'Azure Deployment:Create Azure Container Registry'
+#      inputs:
+#        azureSubscription: 'AzureSC'
+#        resourceGroupName: '$(rgName)'
+#        location: $(location)
+#        csmFile: '$(System.DefaultWorkingDirectory)/**/Infrastructure/acr-template.json'
+#        overrideParameters: '-registryName "$(acrName)" -registryLocation "$(location)" -registrySku standard'
+
+
+#    - task: AzureResourceManagerTemplateDeployment@3
+#      displayName: 'Deploy AKS Cluster'
+#      inputs:
+#        deploymentScope: 'Resource Group'
+#        azureResourceManagerConnection: 'AzureSC'
+#        subscriptionId: '39818ce6-3fe9-40ce-b0d1-f3c6dc89bbaa'
+#        action: 'Create Or Update Resource Group'
+#        resourceGroupName: '$(rgName)'
+#        templateLocation: 'Linked artifact'
+#        location: West US 2
+#        csmFile: '$(System.DefaultWorkingDirectory)/**/Infrastructure/temp-1.json'
+#        csmParametersFile: '$(System.DefaultWorkingDirectory)/**/Infrastructure/param1.json'
+#        deploymentMode: 'Complete'
+
+#    - task: AzureResourceManagerTemplateDeployment@3
+#      inputs:
+#        deploymentScope: 'Subscription'
+#        azureResourceManagerConnection: 'AzureSC'
+#        subscriptionId: '39818ce6-3fe9-40ce-b0d1-f3c6dc89bbaa'
+#        location: 'Central US'
+#        templateLocation: 'Linked artifact'
+#        csmFile: '$(System.DefaultWorkingDirectory)/**/Infrastructure/rg-t.json'
+#        csmParametersFile: '$(System.DefaultWorkingDirectory)/**/Infrastructure/rg-p.json'
+#        deploymentMode: 'Incremental'
+
+
+# Build Stage
+- stage: Build
+  jobs:
+  - job: Build
+    steps:
+
+
+    # Build container image
+    - task: Docker@1
+      displayName: 'Build container image'
+      inputs:
+        azureSubscriptionEndpoint: 'AzureSC'
+        azureContainerRegistry: '$(acrHostName)'
+        imageName: '$(imageName):latest'
+
+
+    # Push container image
+    - task: Docker@1
+      displayName: 'Push container image'
+      inputs:
+        azureSubscriptionEndpoint: 'AzureSC'
+        azureContainerRegistry: '$(acrHostName)'
+        command: 'Push an image'
+        imageName: '$(imageName):latest'
+
+
+
+
+# Deployment Stage
+- stage: Deploy
+  jobs:
+  - job: DeployToKubernetes
+    steps:
+
+    # Deploy to kubernetes cluster using the manifest file
+
+    - task: KubernetesManifest@0
+      displayName: 'Create Secret'
+      inputs:
+        action: 'createSecret'
+        kubernetesServiceConnection: 'kubernetesSC'
+        secretType: 'dockerRegistry'
+        secretName: 'acrsecret'
+        dockerRegistryEndpoint: 'acrSC'
+
+    - task: KubernetesManifest@0
+      displayName: 'Deploy'
+      inputs:
+        action: 'deploy'
+        kubernetesServiceConnection: 'kubernetesSC'
+        namespace: 'default'
+        manifests: '$(System.DefaultWorkingDirectory)/**/cicd/deployment.yaml'
+        imagePullSecrets: acrsecret
+
+
+© 2022 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Docs
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
+Loading complete
